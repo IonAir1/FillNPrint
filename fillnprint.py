@@ -10,7 +10,7 @@ class FillNPrint:
 
     def __init__(self, yaml, excel):
         self.cfg = self.parse_yaml(yaml)
-        self.df = self.read_excel(excel)
+        self.excel = excel
 
 
     def parse_yaml(self, file): #parse yaml files
@@ -63,17 +63,12 @@ class FillNPrint:
             df = df.iloc[:, : last_column+1]
 
         return df
-    
 
-    #create new blank image
-    def new_image(self, size, dpi):
-        img = Image.new('RGB', tuple(i * dpi for i in ast.literal_eval(size)), color=(255, 255, 255))
-        return img
-    
+
     #stamp text to image
     def stamp(self, img, text, pos, dpi, font, size, color, max_width, line_height, max_lines):
         draw = ImageDraw.Draw(img)
-        position = tuple(i * dpi for i in ast.literal_eval(pos))
+        position = tuple(i * dpi for i in pos)
         font_final = ImageFont.truetype(font, size)
 
         #wrap text
@@ -95,20 +90,84 @@ class FillNPrint:
             bbox = font_final.getbbox(text)
             width = bbox[2] - bbox[0]
             height = bbox[3] - bbox[1]
-            draw.text((position[0], y_text), line, ast.literal_eval(color), font=font_final)
+            draw.text((position[0], y_text), line, color, font=font_final)
             y_text += height * offset
-        
 
-    def generate(self, path):
+
+    #generator routine
+    def generate(self, path, **kwargs):
+        #kwargs
+        sheet = kwargs.get('sheet', None)
+        start = kwargs.get('start', 'A1')
+        limit = kwargs.get('limit', None)
+
+        default_values = {
+                'size': 12,
+                'color': (0,0,0),
+                'line-height': 1,
+                'max-width': 50,
+                'max-line': 1
+            }
+        #get list of columns listed in yaml file
+        columns = []
+        for item in self.cfg['text']:
+            columns.append(self.cfg['text'][item]['column'].upper())
+            
+            #fill in missing values with default value
+            for val in default_values:
+                if not val in self.cfg['text'][item]:
+                    self.cfg['text'][item][val] = default_values[val]
+                
+            #convert string tuples to numbers for yaml support
+            for value in ('position', 'color'):
+                if type(self.cfg['text'][item][value][0]) == str:
+                    self.cfg['text'][item][value] = ast.literal_eval(self.cfg['text'][item][value])
+
+        #fill in missing values in ['document'] with default value
+        default_values = {'background': (255, 255, 255, 255), 'rotate': 0}
+        for val in default_values:
+            if not val in self.cfg['document']:
+                self.cfg['document'][val] = default_values[val]
+
+        #convert string tuples to numbers for yaml support
+        for value in ('size', 'background'):
+            if type(self.cfg['document'][value][0]) == str:
+                self.cfg['document'][value] = ast.literal_eval(self.cfg['document'][value])
+
+        #read excel file as data frame
+        df = self.read_excel(self.excel, sheet=sheet, start=start, limit=limit, columns=columns)
         images = []
         document = self.cfg['document']
 
-        for r in range(len(self.df.index)):
-            img = self.new_image((document['size']), document['dpi'])
+        #generate for each row in data frame
+        for r in range(len(df.index)):
+            img = Image.new('RGB', tuple(i * document['dpi'] for i in document['size']), color=document['background'])
+
+            #stamp for each item in text in yaml file
             for item in self.cfg['text']:
                 curr = self.cfg['text'][item]
-                text = self.df.iloc[r][self.col2num(curr['column'])]
+
+                #catch if column is non existent in data frame
+                try:
+                    text = df.iloc[r][self.col2num(curr['column'])]
+                except:
+                    text = ''
+
+                #dont stamp if value is NaN
+                if pd.isnull(text):
+                    text = ''
+
                 self.stamp(img, str(text), curr['position'], document['dpi'], curr['font'], curr['size'], curr['color'], curr['max-width'], curr['line-height'], curr['max-line'])
             images.append(img.rotate(document['rotate']*-1, expand=1))
+        
+            #check if this is the last non empty row
+            empty = True
+            for item in df.iloc[r+1]:
+                if not pd.isnull(item):
+                    empty = False
+            if empty:
+                break
 
-        images[0].save(path, save_all=True, append_images=images[1:], resolution=document['dpi'])
+        images[0].save(path, save_all=True, append_images=images[1:], resolution=document['dpi']) #save
+
+
