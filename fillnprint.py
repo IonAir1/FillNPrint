@@ -14,6 +14,8 @@ class FillNPrint:
 
 
     def parse_yaml(self, file): #parse yaml files
+        if file is None:
+            return
         with open(file, 'r') as stream:
             try:
                 return yaml.safe_load(stream)
@@ -63,6 +65,14 @@ class FillNPrint:
             df = df.iloc[:, : last_column+1]
 
         return df
+
+
+    #return list of sheet names
+    def get_sheets(self):
+        try:
+            return pd.ExcelFile(self.excel).sheet_names
+        except:
+            return ['']
 
 
     #stamp text to image
