@@ -170,4 +170,3 @@ class FillNPrint:
 
         images[0].save(path, save_all=True, append_images=images[1:], resolution=document['dpi']) #save
 
-
