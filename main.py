@@ -1,6 +1,10 @@
 import yaml
 import pandas as pd
 import re
+from PIL import Image, ImageFont, ImageDraw 
+import ast
+import textwrap
+
 
 class FillNPrint:
 
@@ -54,4 +58,39 @@ class FillNPrint:
             df = df.iloc[:, : last_column+1]
 
         return df
+    
 
+    #create new blank image
+    def new_image(self, size, dpi):
+        img = Image.new('RGB', tuple(i * dpi for i in ast.literal_eval(size)), color=(255, 255, 255))
+        return img
+    
+    #stamp text to image
+    def stamp(self, img, text, pos, dpi, font, size, color, max_width, line_height, max_lines):
+        draw = ImageDraw.Draw(img)
+        position = tuple(i * dpi for i in ast.literal_eval(pos))
+        font_final = ImageFont.truetype(font, size)
+
+        #wrap text
+        lines = textwrap.wrap(text, width=max_width)
+        lines = lines[:max_lines]
+        y_text = position[1]
+
+        #anchor to last line if height is less than 0
+        if line_height < 0:
+            for line in lines:
+                width, height = font_final.getbbox(text)
+                offset = line_height * -1
+                y_text -= height * offset
+        else:
+            offset = line_height
+
+        #draw text line by line
+        for line in lines:
+            print(font_final.getbbox(line), line)
+            bbox = font_final.getbbox(text)
+            width = bbox[2] - bbox[0]
+            height = bbox[3] - bbox[1]
+            draw.text((position[0], y_text), line, ast.literal_eval(color), font=font_final)
+            y_text += height * offset
+        
