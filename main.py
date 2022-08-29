@@ -8,6 +8,11 @@ import textwrap
 
 class FillNPrint:
 
+    def __init__(self, yaml, excel):
+        self.cfg = self.parse_yaml(yaml)
+        self.df = self.read_excel(excel)
+
+
     def parse_yaml(self, file): #parse yaml files
         with open(file, 'r') as stream:
             try:
@@ -87,10 +92,23 @@ class FillNPrint:
 
         #draw text line by line
         for line in lines:
-            print(font_final.getbbox(line), line)
             bbox = font_final.getbbox(text)
             width = bbox[2] - bbox[0]
             height = bbox[3] - bbox[1]
             draw.text((position[0], y_text), line, ast.literal_eval(color), font=font_final)
             y_text += height * offset
         
+
+    def generate(self, path):
+        images = []
+        document = self.cfg['document']
+
+        for r in range(len(self.df.index)):
+            img = self.new_image((document['size']), document['dpi'])
+            for item in self.cfg['text']:
+                curr = self.cfg['text'][item]
+                text = self.df.iloc[r][self.col2num(curr['column'])]
+                self.stamp(img, str(text), curr['position'], document['dpi'], curr['font'], curr['size'], curr['color'], curr['max-width'], curr['line-height'], curr['max-line'])
+            images.append(img.rotate(document['rotate']*-1, expand=1))
+
+        images[0].save(path, save_all=True, append_images=images[1:], resolution=document['dpi'])
