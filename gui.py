@@ -5,19 +5,60 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as fd
 import os
+from configparser import ConfigParser
 
+
+#read the save config
+def read(file):
+    cfg = ConfigParser()
+    save = {
+        'excel': '',
+        'config': '',
+        'output': '',
+        'cell': '',
+        'limit': ''
+    }
+    cfg.read(file)
+    if not cfg.has_section('main'):
+        cfg.add_section('main')
+    if cfg.has_option('main','excel'):
+        save['excel'] = cfg.get('main', 'excel')
+    if cfg.has_option('main','config'):
+        save['config'] = cfg.get('main', 'config')
+    if cfg.has_option('main','output'):
+        save['output'] = cfg.get('main', 'output')
+    if cfg.has_option('main','cell'):
+        save['cell'] = cfg.get('main', 'cell')
+    if cfg.has_option('main','config'):
+        save['limit'] = int(cfg.get('main', 'limit'))
+    return save
+
+
+#save the save config
+def save(file, key, val):
+    cfg = ConfigParser()
+    cfg.read(file)
+    if not cfg.has_section('main'):
+        cfg.add_section('main')
+    cfg.set('main', str(key), str(val))
+    with open(file, 'w') as f: #save
+        cfg.write(f)
+
+
+save_file = 'fillnprint.save'
+saved = read(save_file)
 root = tk.Tk()
 root.title('FillNPrint')
 root.geometry('640x480+50+50')
 root.minsize(640, 480)
 
-exl_var = tk.StringVar(root, None)
-cfg_var = tk.StringVar(root, None)
-out_var = tk.StringVar(root, None)
-sht_var = tk.StringVar(root, None)
-cel_var = tk.StringVar(root, None)
-lmt_var = tk.StringVar(root, None)
 
+exl_var = tk.StringVar(root, saved['excel'])
+cfg_var = tk.StringVar(root, saved['config'])
+out_var = tk.StringVar(root, saved['output'])
+sht_var = tk.StringVar(root, None)
+cel_var = tk.StringVar(root, saved['cell'])
+lmt_var = tk.StringVar(root, saved['limit'])
 sheets=['']
 
 
@@ -47,6 +88,7 @@ def select_yaml_file():
     cfg_var = tk.StringVar(root, filename)
     cg_entry.delete(0,tk.END)
     cg_entry.insert(0,filename)
+    save(save_file, 'config', cfg_var.get())
 
 
 #open window for selecting output folder
@@ -62,6 +104,7 @@ def select_output():
     out_var = tk.StringVar(root, filename)
     op_entry.delete(0,tk.END)
     op_entry.insert(0,filename)
+    save(save_file, 'output', out_var.get())
 
 
 #generate pdf
@@ -81,6 +124,7 @@ def excel_file(a):
     sheets = FillNPrint(None, exl_var.get()).get_sheets()
     bs_combobox['values'] = sheets
     bs_combobox.set(sheets[0])
+    save(save_file, 'excel', exl_var.get())
 
 #label
 title = ttk.Label(root, text="FillNPrint")
@@ -107,7 +151,7 @@ st = ttk.Frame(root)
 st.pack(expand=True, fill='x', padx=10)
 
 
-#sheet
+#sheet name
 bs = ttk.Frame(st)#box size frame
 bs.grid(column=0, row=1,padx=10, pady=5, sticky='w')
 bs.grid_columnconfigure(0, weight=1)
@@ -115,7 +159,6 @@ bs.grid_columnconfigure(0, weight=1)
 bs_combobox = ttk.Combobox(bs, textvariable=sht_var, width=8) #box size spinbox
 bs_combobox['values'] = sheets
 bs_combobox.set(sheets[0])
-#bs_combobox.bind("<FocusOut>", lambda event: config_instance.save('box_size', sht_var.get(), True))
 bs_combobox.grid(column=1, row=0)
 
 bs_text = ttk.Label(bs, text='Sheet') #box size label
@@ -128,7 +171,7 @@ sc.grid(column=1, row=1,padx=10, pady=5, sticky='w')
 sc.grid_columnconfigure(0, weight=1)
 
 sc_entry = ttk.Entry(sc, textvariable=cel_var, width=5, takefocus=False) #starting cell spinbox
-#sc_entry.bind("<FocusOut>", lambda event: config_instance.save('starting_cell', cel_var.get(), True))
+sc_entry.bind("<FocusOut>", lambda event: save(save_file, 'cell', cel_var.get()))
 sc_entry.grid(column=1, row=0)
 
 sc_text = ttk.Label(sc, text='Starting Cell') #starting cell label
@@ -141,7 +184,7 @@ lm.grid(column=2, row=1,padx=10, pady=5, sticky='w')
 lm.grid_columnconfigure(0, weight=1)
 
 lm_spinbox = ttk.Spinbox(lm, textvariable=lmt_var, from_=0, to=1000, width=3, takefocus=False) #box size spinbox
-#lm_spinbox.bind("<FocusOut>", lambda event: config_instance.save('box_size', lmt_var.get(), True))
+lm_spinbox.bind("<FocusOut>", lambda event: save(save_file, 'limit', lmt_var.get()))
 lm_spinbox.grid(column=1, row=0)
 
 lm_text = ttk.Label(lm, text='Limit') #box size label
@@ -155,7 +198,7 @@ cg.grid_columnconfigure(0, weight=1)
 
 cg_entry = ttk.Entry(cg, textvariable=cfg_var, takefocus=False) #excel file entry input
 cg_entry.grid(column=0, row=0, padx=10, pady=10, sticky='ew')
-#cg_entry.bind("<FocusOut>", lambda event: config_instance.save('excel_file', cg_var.get(), True))
+cg_entry.bind("<FocusOut>", lambda event: save(save_file, 'config', cfg_var.get()))
 cg_entry.bind('<Control-a>', lambda x: cg_entry.selection_range(0, 'end') or "break")
 
 cg_browse = ttk.Button(cg, text='Browse', command=select_yaml_file, takefocus=False) #excel file browse button
@@ -169,7 +212,7 @@ op.grid_columnconfigure(0, weight=1)
 
 op_entry = ttk.Entry(op, textvariable=out_var, takefocus=False) #excel file entry input
 op_entry.grid(column=0, row=0, padx=10, pady=10, sticky='ew')
-#op_entry.bind("<FocusOut>", lambda event: config_instance.save('excel_file', op_var.get(), True))
+op_entry.bind("<FocusOut>", lambda event: save(save_file, 'output', out_var.get()))
 op_entry.bind('<Control-a>', lambda x: op_entry.selection_range(0, 'end') or "break")
 
 op_browse = ttk.Button(op, text='Browse', command=select_output, takefocus=False) #excel file browse button
@@ -201,6 +244,10 @@ pb = ttk.Progressbar( #progress bar
     mode='determinate',
     length=480,
 )
+
+
+#load sheet names
+excel_file('')
 
 
 root.mainloop()
