@@ -11,6 +11,8 @@ class FillNPrint:
     def __init__(self, yaml, excel):
         self.cfg = self.parse_yaml(yaml)
         self.excel = excel
+        self.progress_bar = None
+        self.progress_text = None
 
 
     def parse_yaml(self, file): #parse yaml files
@@ -104,12 +106,30 @@ class FillNPrint:
             y_text += height * offset
 
 
+    #assign progress bar and text to variable
+    def assign_progress(self, bar, text):
+        self.progress_bar = bar
+        self.progress_text = text
+
+
     #generator routine
     def generate(self, path, **kwargs):
         #kwargs
         sheet = kwargs.get('sheet', None)
         start = kwargs.get('start', 'A1')
         limit = kwargs.get('limit', None)
+        print_text = kwargs.get('print', True)
+
+        #return progress if enabled
+        def progress(progress, text):
+            if print_text:
+                print(text)
+            if not self.progress_text is None:
+                self.progress_text.config(text=text)
+            if not self.progress_bar is None:
+                self.progress_bar['value'] = progress
+
+        progress(0, 'Starting...')
 
         default_values = {
                 'size': 12,
@@ -149,8 +169,20 @@ class FillNPrint:
         images = []
         document = self.cfg['document']
 
+        #find last row
+        length = len(df.index)
+        for r in range(len(df.index) - 1):
+            empty = True
+            for item in df.iloc[r+1]:
+                if not pd.isnull(item):
+                    empty = False
+            if empty:
+                length = r+1
+                break
+
         #generate for each row in data frame
-        for r in range(len(df.index)):
+        for r in range(length):
+            progress((r+1)/length*100, "Processing ("+str(r+1)+"/"+str(length)+")")
             img = Image.new('RGB', tuple(i * document['dpi'] for i in document['size']), color=document['background'])
 
             #stamp for each item in text in yaml file
@@ -169,14 +201,6 @@ class FillNPrint:
 
                 self.stamp(img, str(text), curr['position'], document['dpi'], curr['font'], curr['size'], curr['color'], curr['max-width'], curr['line-height'], curr['max-line'])
             images.append(img.rotate(document['rotate']*-1, expand=1))
-        
-            #check if this is the last non empty row
-            empty = True
-            for item in df.iloc[r+1]:
-                if not pd.isnull(item):
-                    empty = False
-            if empty:
-                break
 
         images[0].save(path, save_all=True, append_images=images[1:], resolution=document['dpi']) #save
-
+        progress(100, 'Done!')

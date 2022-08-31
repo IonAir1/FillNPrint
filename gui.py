@@ -30,7 +30,7 @@ def read(file):
     if cfg.has_option('main','cell'):
         save['cell'] = cfg.get('main', 'cell')
     if cfg.has_option('main','config'):
-        save['limit'] = int(cfg.get('main', 'limit'))
+        save['limit'] = cfg.get('main', 'limit')
     return save
 
 
@@ -107,15 +107,23 @@ def select_output():
     save(save_file, 'output', out_var.get())
 
 
-#generate pdf
+#function to run new thread
 def generate():
-    com = "FillNPrint('{}', '{}').generate('{}'".format(cfg_var.get(), exl_var.get(), out_var.get())
+    gn.focus_set()
+    generate = threading.Thread(target=generate_thread)
+    generate.start()
+
+#generate pdf
+def generate_thread():
+    fnp_inst = FillNPrint(cfg_var.get(), exl_var.get())
+    fnp_inst.assign_progress(pb, pt)
+    com = "fnp_inst.generate('{}'".format(out_var.get())
     if sht_var.get() != '':
         com = com + ", sheet='{}'".format(sht_var.get())
     if cel_var.get() != '':
         com = com + ", cell='{}'".format(cel_var.get())
     if lmt_var.get() != '':
-        com = com + ", limit={}".format(lmt_var.get())
+        com = com + ", limit={}".format(int(lmt_var.get()))
     exec(com+')')
 
 
@@ -238,12 +246,14 @@ ps.columnconfigure(0, weight=1)
 pt = ttk.Label(ps, text='') #progress text
 pt.grid(column=0, row=0, padx=30, sticky='w')
 
+
 pb = ttk.Progressbar( #progress bar
     ps,
     orient='horizontal',
     mode='determinate',
     length=480,
 )
+pb.grid(column=0, row=1, padx=20, sticky='ew')
 
 
 #load sheet names
