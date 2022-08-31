@@ -129,3 +129,4 @@ dmypy.json
 *.cfg
 *.yaml
 *.yml
+*.save

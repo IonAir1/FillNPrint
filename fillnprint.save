@@ -1,7 +1,0 @@
-[main]
-excel = /home/renz/fillnprint/test1.xlsx
-config = /home/renz/fillnprint/config1.cfg
-output = /home/renz/fillnprint/output.pdf
-cell = A1
-limit = 5
-
