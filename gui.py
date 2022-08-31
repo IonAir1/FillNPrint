@@ -1,4 +1,3 @@
-from ftplib import B_CRLF
 from fillnprint import FillNPrint
 import threading
 import tkinter as tk
@@ -113,17 +112,43 @@ def generate():
     generate = threading.Thread(target=generate_thread)
     generate.start()
 
+
 #generate pdf
 def generate_thread():
+    #check if excel file exists
+    if not exl_var.get().endswith('.xlsx') or not os.path.exists(exl_var.get()):
+        print("Invalid excel file")
+        pt.config(text="Invalid excel file")
+        return
+
     fnp_inst = FillNPrint(cfg_var.get(), exl_var.get())
+
+    #more exception handling
+    if not sht_var.get() in bs_combobox['values'] and len(sht_var.get()) != 0:
+        print("Selected sheet is not a valid sheet")
+        pt.config(text="Selected sheet is not a valid sheet")
+        return
+    if lmt_var.get().upper().isupper() and len(lmt_var.get()) != 0:
+        print("'Limit' setting must be an integer or leave empty for no limit")
+        pt.config(text="'Limit' setting must be an integer or left empty")
+        return
+    if fnp_inst.cfg == "error: invalid yaml file" or not os.path.exists(cfg_var.get()):
+        print("Invalid yaml file")
+        pt.config(text="Invalid yaml file")
+        return
+    if not out_var.get().endswith('.pdf'):
+        print("Output file must be a pdf file")
+        pt.config(text="Output file must be a pdf file")
+        return
+
     fnp_inst.assign_progress(pb, pt)
     com = "fnp_inst.generate('{}'".format(out_var.get())
     if sht_var.get() != '':
         com = com + ", sheet='{}'".format(sht_var.get())
     if cel_var.get() != '':
-        com = com + ", cell='{}'".format(cel_var.get())
+        com = com + ", start='{}'".format(cel_var.get())
     if lmt_var.get() != '':
-        com = com + ", limit={}".format(int(lmt_var.get()))
+        com = com + ", limit={}".format(abs(int(lmt_var.get())))
     exec(com+')')
 
 
@@ -168,6 +193,7 @@ bs_combobox = ttk.Combobox(bs, textvariable=sht_var, width=8) #box size spinbox
 bs_combobox['values'] = sheets
 bs_combobox.set(sheets[0])
 bs_combobox.grid(column=1, row=0)
+bs_combobox.bind('<Control-a>', lambda x: bs_combobox.selection_range(0, 'end') or "break")
 
 bs_text = ttk.Label(bs, text='Sheet') #box size label
 bs_text.grid(column=0, row=0)
@@ -181,6 +207,7 @@ sc.grid_columnconfigure(0, weight=1)
 sc_entry = ttk.Entry(sc, textvariable=cel_var, width=5, takefocus=False) #starting cell spinbox
 sc_entry.bind("<FocusOut>", lambda event: save(save_file, 'cell', cel_var.get()))
 sc_entry.grid(column=1, row=0)
+sc_entry.bind('<Control-a>', lambda x: sc_entry.selection_range(0, 'end') or "break")
 
 sc_text = ttk.Label(sc, text='Starting Cell') #starting cell label
 sc_text.grid(column=0, row=0)
@@ -194,6 +221,7 @@ lm.grid_columnconfigure(0, weight=1)
 lm_spinbox = ttk.Spinbox(lm, textvariable=lmt_var, from_=0, to=1000, width=3, takefocus=False) #box size spinbox
 lm_spinbox.bind("<FocusOut>", lambda event: save(save_file, 'limit', lmt_var.get()))
 lm_spinbox.grid(column=1, row=0)
+lm_spinbox.bind('<Control-a>', lambda x: lm_spinbox.selection_range(0, 'end') or "break")
 
 lm_text = ttk.Label(lm, text='Limit') #box size label
 lm_text.grid(column=0, row=0)

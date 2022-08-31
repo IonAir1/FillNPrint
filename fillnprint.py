@@ -4,6 +4,7 @@ import re
 from PIL import Image, ImageFont, ImageDraw 
 import ast
 import textwrap
+import os
 
 
 class FillNPrint:
@@ -18,12 +19,13 @@ class FillNPrint:
     def parse_yaml(self, file): #parse yaml files
         if file is None:
             return
-        with open(file, 'r') as stream:
-            try:
-                return yaml.safe_load(stream)
-            except yaml.YAMLError as exc:
-                return "error: invalid yaml file"
-    
+        if os.path.exists(file):
+            with open(file, 'r') as stream:
+                try:
+                    return yaml.safe_load(stream)
+                except yaml.YAMLError as exc:
+                    return "error: invalid yaml file"
+
 
     def col2num(self, col): #convert excel column letter to integer
         c = 0
@@ -202,5 +204,7 @@ class FillNPrint:
                 self.stamp(img, str(text), curr['position'], document['dpi'], curr['font'], curr['size'], curr['color'], curr['max-width'], curr['line-height'], curr['max-line'])
             images.append(img.rotate(document['rotate']*-1, expand=1))
 
+        if not os.path.isdir(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
         images[0].save(path, save_all=True, append_images=images[1:], resolution=document['dpi']) #save
         progress(100, 'Done!')
