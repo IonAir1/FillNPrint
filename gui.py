@@ -1,10 +1,10 @@
-from fillnprint import FillNPrint
+from configparser import ConfigParser
 import threading
 import tkinter as tk
+import os
 from tkinter import ttk
 from tkinter import filedialog as fd
-import os
-from configparser import ConfigParser
+from fillnprint import FillNPrint
 
 
 #read the save config
@@ -115,21 +115,19 @@ def generate():
 
 #generate pdf
 def generate_thread():
-    #check if excel file exists
+    fnp_inst = FillNPrint(cfg_var.get(), exl_var.get())
+
+    #exception handling
     if not exl_var.get().endswith('.xlsx') or not os.path.exists(exl_var.get()):
         print("Invalid excel file")
         pt.config(text="Invalid excel file")
         return
-
-    fnp_inst = FillNPrint(cfg_var.get(), exl_var.get())
-
-    #more exception handling
     if not sht_var.get() in bs_combobox['values'] and len(sht_var.get()) != 0:
         print("Selected sheet is not a valid sheet")
         pt.config(text="Selected sheet is not a valid sheet")
         return
     if lmt_var.get().upper().isupper() and len(lmt_var.get()) != 0:
-        print("'Limit' setting must be an integer or leave empty for no limit")
+        print("'Limit' setting must be an integer or left empty")
         pt.config(text="'Limit' setting must be an integer or left empty")
         return
     if fnp_inst.cfg == "error: invalid yaml file" or not os.path.exists(cfg_var.get()):

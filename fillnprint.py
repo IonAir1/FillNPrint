@@ -1,10 +1,10 @@
-import yaml
-import pandas as pd
-import re
-from PIL import Image, ImageFont, ImageDraw 
 import ast
-import textwrap
+import pandas as pd
 import os
+import re
+import yaml
+from PIL import Image, ImageFont, ImageDraw 
+import textwraps
 
 
 class FillNPrint:
