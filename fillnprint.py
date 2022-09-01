@@ -4,7 +4,7 @@ import os
 import re
 import yaml
 from PIL import Image, ImageFont, ImageDraw 
-import textwraps
+import textwrap
 
 
 class FillNPrint:
@@ -52,7 +52,7 @@ class FillNPrint:
             df = pd.read_excel(file, skiprows=skip_row, header=None)
 
         #skip column to starting_cell
-        df = df.iloc[: , self.col2num(re.sub(r"\d+", "", start)):]
+        df = df.iloc[: , self.col2num(re.sub(r'\d+', '', start)):]
         df.columns = pd.RangeIndex(df.columns.size)
 
         #apply limit
@@ -75,14 +75,14 @@ class FillNPrint:
     def get_sheets(self):
         try:
             return pd.ExcelFile(self.excel).sheet_names
-        except:
+        except Exception:
             return ['']
 
 
     #stamp text to image
     def stamp(self, img, text, pos, dpi, font, size, color, max_width, line_height, max_lines):
         draw = ImageDraw.Draw(img)
-        position = tuple(i * dpi for i in pos)
+        position = (int(self.to_inch(pos.replace(' ','').split(',')[0]) * dpi + 0.5), int(self.to_inch(pos.replace(' ','').split(',')[1]) * dpi + 0.5))
         font_final = ImageFont.truetype(font, size)
 
         #wrap text
@@ -106,6 +106,26 @@ class FillNPrint:
             height = bbox[3] - bbox[1]
             draw.text((position[0], y_text), line, color, font=font_final)
             y_text += height * offset
+
+
+    #convert value to inch
+    def to_inch(self, input):
+        unit = re.sub(r'\d+', '', input).lower().replace('.', '').replace(',', '')
+        val = float(input.lower().replace(unit, '').replace(' ', ''))
+        if unit == "":
+            return val
+        elif unit == 'cm':
+            return val/2.54
+        elif unit == 'mm':
+            return val/25.4
+        elif unit == 'm':
+            return val*39.3701
+        elif unit == 'ft':
+            return val*12
+        elif unit == 'yd':
+            return val *36
+        elif unit == 'in':
+            return val
 
 
     #assign progress bar and text to variable
@@ -151,9 +171,8 @@ class FillNPrint:
                     self.cfg['text'][item][val] = default_values[val]
                 
             #convert string tuples to numbers for yaml support
-            for value in ('position', 'color'):
-                if type(self.cfg['text'][item][value][0]) == str:
-                    self.cfg['text'][item][value] = ast.literal_eval(self.cfg['text'][item][value])
+            if type(self.cfg['text'][item]['color'][0]) == str:
+                self.cfg['text'][item]['color'] = ast.literal_eval(self.cfg['text'][item]['color'])
 
         #fill in missing values in ['document'] with default value
         default_values = {'background': (255, 255, 255, 255), 'rotate': 0}
@@ -162,9 +181,8 @@ class FillNPrint:
                 self.cfg['document'][val] = default_values[val]
 
         #convert string tuples to numbers for yaml support
-        for value in ('size', 'background'):
-            if type(self.cfg['document'][value][0]) == str:
-                self.cfg['document'][value] = ast.literal_eval(self.cfg['document'][value])
+        if type(self.cfg['document']['background'][0]) == str:
+            self.cfg['document']['background'] = ast.literal_eval(self.cfg['document']['background'])
 
         #read excel file as data frame
         df = self.read_excel(self.excel, sheet=sheet, start=start, limit=limit, columns=columns)
@@ -181,11 +199,14 @@ class FillNPrint:
             if empty:
                 length = r+1
                 break
+        
+        size = tuple(document['size'].replace(' ','').split('x'))
+        template = Image.new('RGB', (int(self.to_inch(size[0]) * document['dpi'] + 0.5), int(self.to_inch(size[1]) * document['dpi'] + 0.5)), color=document['background'])
 
         #generate for each row in data frame
         for r in range(length):
             progress((r+1)/length*100, "Processing ("+str(r+1)+"/"+str(length)+")")
-            img = Image.new('RGB', tuple(i * document['dpi'] for i in document['size']), color=document['background'])
+            img = template.copy()
 
             #stamp for each item in text in yaml file
             for item in self.cfg['text']:
@@ -194,7 +215,7 @@ class FillNPrint:
                 #catch if column is non existent in data frame
                 try:
                     text = df.iloc[r][self.col2num(curr['column'])]
-                except:
+                except Exception:
                     text = ''
 
                 #dont stamp if value is NaN
@@ -205,6 +226,9 @@ class FillNPrint:
             images.append(img.rotate(document['rotate']*-1, expand=1))
 
         if not os.path.isdir(os.path.dirname(path)):
-            os.makedirs(os.path.dirname(path))
+            try:
+                os.makedirs(os.path.dirname(path))
+            except Exception:
+                pass
         images[0].save(path, save_all=True, append_images=images[1:], resolution=document['dpi']) #save
         progress(100, 'Done!')
