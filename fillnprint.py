@@ -199,9 +199,21 @@ class FillNPrint:
             if empty:
                 length = r+1
                 break
-        
+
+        #set template
         size = tuple(document['size'].replace(' ','').split('x'))
         template = Image.new('RGB', (int(self.to_inch(size[0]) * document['dpi'] + 0.5), int(self.to_inch(size[1]) * document['dpi'] + 0.5)), color=document['background'])
+        #paste reference image if required
+        if 'reference' in document and os.path.isfile(document['reference']):
+            reference = Image.open(document['reference'], 'r')
+
+            #resizs reference image to max size if it exceeds max size
+            if reference.size[0] > template.size[0]:
+                reference = reference.resize((int(template.size[0] + 0.5), int(template.size[0] * reference.size[1] / reference.size[0] + 0.5)), Image.ANTIALIAS)
+            if reference.size[1] > template.size[1]:
+                reference = reference.resize((int(template.size[1] * reference.size[0] / reference.size[1] + 0.5), int(template.size[1] + 0.5)), Image.ANTIALIAS)
+
+            template.paste(reference, (0, 0), reference.convert('RGBA'))
 
         #generate for each row in data frame
         for r in range(length):
