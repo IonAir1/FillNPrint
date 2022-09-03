@@ -106,14 +106,14 @@ def select_output():
     save(save_file, 'output', out_var.get())
 
 
-#function to run new thread
+#function to run new thread to generate
 def generate():
     gn.focus_set()
     generate = threading.Thread(target=generate_thread)
     generate.start()
 
 
-#generate pdf
+#call generate function from FillNPrint
 def generate_thread():
     fnp_inst = FillNPrint(cfg_var.get(), exl_var.get())
 
@@ -133,6 +133,11 @@ def generate_thread():
     if fnp_inst.cfg == "error: invalid yaml file" or not os.path.exists(cfg_var.get()):
         print("Invalid yaml file")
         pt.config(text="Invalid yaml file")
+        return
+    if "config error:" in fnp_inst.cfg:
+        error = fnp_inst.cfg.split("\n")
+        print(error[0])
+        pt.config(text=error[0])
         return
     if not out_var.get().endswith('.pdf'):
         print("Output file must be a pdf file")

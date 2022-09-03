@@ -21,6 +21,10 @@ if not args.excel.endswith('.xlsx') or not os.path.exists(args.excel):
 if fnp_inst.cfg == "error: invalid yaml file" or not os.path.exists(args.yaml):
     print("Invalid yaml file")
     exit()
+if "config error:" in fnp_inst.cfg:
+    error = fnp_inst.cfg.split("\n")
+    print(error[0])
+    exit()
 if not args.output.endswith('.pdf'):
     print("Output file must be a pdf file")
     exit()

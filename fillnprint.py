@@ -1,4 +1,5 @@
 import ast
+import jsonschema
 import pandas as pd
 import os
 import re
@@ -22,9 +23,55 @@ class FillNPrint:
         if os.path.exists(file):
             with open(file, 'r') as stream:
                 try:
-                    return yaml.safe_load(stream)
+                    cfg = yaml.safe_load(stream)
                 except yaml.YAMLError as exc:
                     return "error: invalid yaml file"
+
+            schema_file = {
+                "type": "object",
+                "properties": {
+                    "document": {
+                        "type": "object",
+                        "required": ["size", "dpi"],
+                        "properties": {
+                            "size": {"type": "string", "pattern": "^\d+(?:\.\d+)?[a-zA-Z]+\s*x\s*\d+(?:\.\d+)?[a-zA-Z]+$"},
+                            "dpi": {"type": "number"},
+                            "rotate": {"type": "number"},
+                            "background": {"type": "string", "pattern": "^\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$"},
+                            "reference": {"type": "string"},
+                        }
+                    },
+                    "text": {"type": "object"}
+                }
+            }
+
+            schema_text = {
+                "type": "object",
+                "required": ["column", "position", "font"],
+                "properties": {
+                    "column": {"type": "string", "pattern": "^[a-zA-Z]$"},
+                    "position": {"type": "string", "pattern": "^\d+(?:\.\d+)?[a-zA-Z]+\s*,\s*\d+(?:\.\d+)?[a-zA-Z]+$"},
+                    "font": {"type": "string"},
+                    "size": {"type": "number"},
+                    "color": {"type": "string", "pattern": "^\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$"},
+                    "line-height": {"type": "number"},
+                    "max-width": {"type": "number"},
+                    "max-line": {"type": "number"}
+                }
+            }
+
+            try:
+                jsonschema.validate(cfg, schema=schema_file)
+            except jsonschema.exceptions.ValidationError as err:
+                return "config error: document: "+str(err)
+
+            for text in cfg['text']:
+                try:
+                    jsonschema.validate(cfg['text'][text], schema=schema_text)
+                except jsonschema.exceptions.ValidationError as err:
+                    return "config error: "+str(text)+": "+str(err)
+
+            return cfg
 
 
     def col2num(self, col): #convert excel column letter to integer
@@ -80,9 +127,15 @@ class FillNPrint:
 
 
     #stamp text to image
-    def stamp(self, img, text, pos, dpi, font, size, color, max_width, line_height, max_lines):
+    def stamp(self, img, text, pos, dpi, font, size, color, max_width, line_height, max_lines, **kwargs):
         draw = ImageDraw.Draw(img)
-        position = (int(self.to_inch(pos.replace(' ','').split(',')[0]) * dpi + 0.5), int(self.to_inch(pos.replace(' ','').split(',')[1]) * dpi + 0.5))
+        position = (int(self.to_inch(pos.replace(' ','').split(',')[0], error=kwargs.get('error', '')) * dpi + 0.5), int(self.to_inch(pos.replace(' ','').split(',')[1], error=kwargs.get('error', '')) * dpi + 0.5))
+
+        #verify that the font is existent and is a font file
+        if not os.path.isfile(font) or (not font.endswith(".ttf") and not font.endswith(".otf")):
+            self.progress(0, "config error: " + kwargs.get('error', '') + ": nonexistent file or unsupported font \"" + font + "\"")
+            exit()
+
         font_final = ImageFont.truetype(font, size)
 
         #wrap text
@@ -109,12 +162,16 @@ class FillNPrint:
 
 
     #convert value to inch
-    def to_inch(self, input):
-        unit = re.sub(r'\d+', '', input).lower().replace('.', '').replace(',', '')
-        val = float(input.lower().replace(unit, '').replace(' ', ''))
-        if unit == "":
-            return val
-        elif unit == 'cm':
+    def to_inch(self, input, **kwargs):
+        error = kwargs.get('error', '')
+        try:
+            unit = re.sub(r'\d+', '', input).lower().replace('.', '').replace(',', '')
+            val = float(input.lower().replace(unit, '').replace(' ', ''))
+        except Exception:
+            unit = ''
+            val = 0
+
+        if unit == 'cm':
             return val/2.54
         elif unit == 'mm':
             return val/25.4
@@ -126,6 +183,10 @@ class FillNPrint:
             return val *36
         elif unit == 'in':
             return val
+        #return error if unit is unknown
+        else:
+            self.progress(0, "config error: " + error + ": unknown or unsupported unit \"" + input + "\"")
+            exit()
 
 
     #assign progress bar and text to variable
@@ -134,24 +195,25 @@ class FillNPrint:
         self.progress_text = text
 
 
+    #return progress if enabled
+    def progress(self, progress, text):
+        if self.print_text:
+            print(text)
+        if not self.progress_text is None:
+            self.progress_text.config(text=text)
+        if not self.progress_bar is None:
+            self.progress_bar['value'] = progress
+
+
     #generator routine
     def generate(self, path, **kwargs):
         #kwargs
         sheet = kwargs.get('sheet', None)
         start = kwargs.get('start', 'A1')
         limit = kwargs.get('limit', None)
-        print_text = kwargs.get('print', True)
+        self.print_text = kwargs.get('print', True)
 
-        #return progress if enabled
-        def progress(progress, text):
-            if print_text:
-                print(text)
-            if not self.progress_text is None:
-                self.progress_text.config(text=text)
-            if not self.progress_bar is None:
-                self.progress_bar['value'] = progress
-
-        progress(0, 'Starting...')
+        self.progress(0, 'Starting...')
 
         default_values = {
                 'size': 12,
@@ -217,7 +279,7 @@ class FillNPrint:
 
         #generate for each row in data frame
         for r in range(length):
-            progress((r+1)/length*100, "Processing ("+str(r+1)+"/"+str(length)+")")
+            self.progress((r+1)/length*100, "Processing ("+str(r+1)+"/"+str(length)+")")
             img = template.copy()
 
             #stamp for each item in text in yaml file
@@ -234,7 +296,7 @@ class FillNPrint:
                 if pd.isnull(text):
                     text = ''
 
-                self.stamp(img, str(text), curr['position'], document['dpi'], curr['font'], curr['size'], curr['color'], curr['max-width'], curr['line-height'], curr['max-line'])
+                self.stamp(img, str(text), curr['position'], document['dpi'], curr['font'], curr['size'], curr['color'], curr['max-width'], curr['line-height'], curr['max-line'], error=item)
             images.append(img.rotate(document['rotate']*-1, expand=1))
 
         if not os.path.isdir(os.path.dirname(path)):
@@ -243,4 +305,4 @@ class FillNPrint:
             except Exception:
                 pass
         images[0].save(path, save_all=True, append_images=images[1:], resolution=document['dpi']) #save
-        progress(100, 'Done!')
+        self.progress(100, 'Done!')
