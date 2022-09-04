@@ -97,8 +97,10 @@ class FillNPrint:
         #load excel file
         if sheet:
             worksheet = workbook[sheet]
+        elif sheet in ['', None]:
+            worksheet = workbook.worksheets[0]
         else:
-            worksheet = workbook['']
+            worksheet = workbook[sheet]
         df = pd.DataFrame(worksheet.values)
 
         #skip to starting_cell

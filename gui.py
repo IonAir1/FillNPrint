@@ -122,7 +122,7 @@ def generate_thread():
         print("Invalid excel file")
         pt.config(text="Invalid excel file")
         return
-    if not sht_var.get() in bs_combobox['values'] and len(sht_var.get()) != 0:
+    if not sht_var.get() in bs_combobox['values']:
         print("Selected sheet is not a valid sheet")
         pt.config(text="Selected sheet is not a valid sheet")
         return
@@ -158,7 +158,7 @@ def generate_thread():
 #excel file selected
 def excel_file(a):
     sheets = FillNPrint(None, exl_var.get()).get_sheets()
-    bs_combobox['values'] = sheets
+    bs_combobox['values'] = [''] + sheets
     bs_combobox.set(sheets[0])
     save(save_file, 'excel', exl_var.get())
 
@@ -192,7 +192,7 @@ bs = ttk.Frame(st)#box size frame
 bs.grid(column=0, row=1,padx=10, pady=5, sticky='w')
 bs.grid_columnconfigure(0, weight=1)
 
-bs_combobox = ttk.Combobox(bs, textvariable=sht_var, width=8) #box size spinbox
+bs_combobox = ttk.Combobox(bs, textvariable=sht_var, width=8, state='readonly') #box size spinbox
 bs_combobox['values'] = sheets
 bs_combobox.set(sheets[0])
 bs_combobox.grid(column=1, row=0)
