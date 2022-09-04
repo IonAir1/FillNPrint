@@ -39,6 +39,8 @@ def read(file):
 
 #save the save config
 def save(file, key, val):
+    if key == 'sheet':
+        sh_combobox.selection_clear()
     cfg = ConfigParser()
     cfg.read(file)
     if not cfg.has_section('main'):
@@ -126,7 +128,7 @@ def generate_thread():
         print("Invalid excel file")
         pt.config(text="Invalid excel file")
         return
-    if not sht_var.get() in bs_combobox['values']:
+    if not sht_var.get() in sh_combobox['values']:
         print("Selected sheet is not a valid sheet")
         pt.config(text="Selected sheet is not a valid sheet")
         return
@@ -162,8 +164,8 @@ def generate_thread():
 #excel file selected
 def excel_file(a):
     sheets = FillNPrint(None, exl_var.get()).get_sheets()
-    bs_combobox['values'] = [''] + sheets
-    bs_combobox.set(bs_combobox['values'][min(len(bs_combobox['values']), int(saved['sheet']))])
+    sh_combobox['values'] = [''] + sheets
+    sh_combobox.set(sh_combobox['values'][min(len(sh_combobox['values']), int(saved['sheet']))])
     save(save_file, 'excel', exl_var.get())
 
 #label
@@ -192,19 +194,19 @@ st.pack(expand=True, fill='x', padx=10)
 
 
 #sheet name
-bs = ttk.Frame(st)#box size frame
-bs.grid(column=0, row=1,padx=10, pady=5, sticky='w')
-bs.grid_columnconfigure(0, weight=1)
+sh = ttk.Frame(st)#box size frame
+sh.grid(column=0, row=1,padx=10, pady=5, sticky='w')
+sh.grid_columnconfigure(0, weight=1)
 
-bs_combobox = ttk.Combobox(bs, textvariable=sht_var, width=8, state='readonly') #box size spinbox
-bs_combobox['values'] = sheets
-bs_combobox.set(sheets[0])
-bs_combobox.grid(column=1, row=0)
-bs_combobox.bind("<<ComboboxSelected>>", lambda _: save(save_file, 'sheet', bs_combobox['values'].index(sht_var.get())))
-bs_combobox.bind("<<ComboboxSelected>>", lambda _: bs_combobox.selection_clear())
+sh_combobox = ttk.Combobox(sh, textvariable=sht_var, width=8, state='readonly') #box size spinbox
+sh_combobox['values'] = sheets
+sh_combobox.set(sheets[0])
+sh_combobox.grid(column=1, row=0)
+sh_combobox.bind("<<ComboboxSelected>>", lambda _: save(save_file, 'sheet', sh_combobox['values'].index(sht_var.get())))
 
-bs_text = ttk.Label(bs, text='Sheet') #box size label
-bs_text.grid(column=0, row=0)
+
+sh_text = ttk.Label(sh, text='Sheet') #box size label
+sh_text.grid(column=0, row=0)
 
 
 #starting cell
