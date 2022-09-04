@@ -3,9 +3,10 @@ import jsonschema
 import pandas as pd
 import os
 import re
-import yaml
-from PIL import Image, ImageFont, ImageDraw 
 import textwrap
+import yaml
+from openpyxl import load_workbook
+from PIL import Image, ImageFont, ImageDraw 
 
 
 class FillNPrint:
@@ -90,16 +91,18 @@ class FillNPrint:
         columns = kwargs.get('columns', None)
         sheet = kwargs.get('sheet', None)
 
-        skip_row = int(re.findall(r'\d+', start)[0]) - 1 #skip row to starting_cell
 
-        #use sheet as sheet_name if specified
+        workbook = load_workbook(file, data_only=True)
+
+        #load excel file
         if sheet:
-            df = pd.read_excel(file, sheet_name=sheet, skiprows=skip_row, header=None)
+            worksheet = workbook[sheet]
         else:
-            df = pd.read_excel(file, skiprows=skip_row, header=None)
+            worksheet = workbook['']
+        df = pd.DataFrame(worksheet.values)
 
-        #skip column to starting_cell
-        df = df.iloc[: , self.col2num(re.sub(r'\d+', '', start)):]
+        #skip to starting_cell
+        df = df.iloc[(int(re.findall(r'\d+', start)[0]) - 1): , self.col2num(re.sub(r'\d+', '', start)):]
         df.columns = pd.RangeIndex(df.columns.size)
 
         #apply limit
