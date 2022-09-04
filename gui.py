@@ -1,4 +1,5 @@
 from configparser import ConfigParser
+from re import M
 import threading
 import tkinter as tk
 import os
@@ -15,7 +16,8 @@ def read(file):
         'config': '',
         'output': '',
         'cell': '',
-        'limit': ''
+        'limit': '',
+        'sheet': 0
     }
     cfg.read(file)
     if not cfg.has_section('main'):
@@ -30,6 +32,8 @@ def read(file):
         save['cell'] = cfg.get('main', 'cell')
     if cfg.has_option('main','config'):
         save['limit'] = cfg.get('main', 'limit')
+    if cfg.has_option('main', 'sheet'):
+        save['sheet'] = cfg.get('main', 'sheet')
     return save
 
 
@@ -159,7 +163,7 @@ def generate_thread():
 def excel_file(a):
     sheets = FillNPrint(None, exl_var.get()).get_sheets()
     bs_combobox['values'] = [''] + sheets
-    bs_combobox.set(sheets[0])
+    bs_combobox.set(bs_combobox['values'][min(len(bs_combobox['values']), int(saved['sheet']))])
     save(save_file, 'excel', exl_var.get())
 
 #label
@@ -176,7 +180,7 @@ ef.grid_columnconfigure(0, weight=1)
 ef_entry = ttk.Entry(ef, textvariable=exl_var,takefocus=False) #excel file entry input
 ef_entry.grid(column=0, row=0, padx=10, pady=10, sticky='ew')
 ef_entry.bind("<FocusOut>", excel_file)
-ef_entry.bind('<Control-a>', lambda x: ef_entry.selection_range(0, 'end') or "break")
+ef_entry.bind('<Control-a>', lambda _: ef_entry.selection_range(0, 'end') or "break")
 
 ef_browse = ttk.Button(ef, text='Browse', command=select_excel_file, takefocus=False) #excel file browse button
 ef_browse.grid(column=1, row=0, padx=10, pady=10)
@@ -196,7 +200,8 @@ bs_combobox = ttk.Combobox(bs, textvariable=sht_var, width=8, state='readonly') 
 bs_combobox['values'] = sheets
 bs_combobox.set(sheets[0])
 bs_combobox.grid(column=1, row=0)
-bs_combobox.bind('<Control-a>', lambda x: bs_combobox.selection_range(0, 'end') or "break")
+bs_combobox.bind("<<ComboboxSelected>>", lambda _: save(save_file, 'sheet', bs_combobox['values'].index(sht_var.get())))
+bs_combobox.bind("<<ComboboxSelected>>", lambda _: bs_combobox.selection_clear())
 
 bs_text = ttk.Label(bs, text='Sheet') #box size label
 bs_text.grid(column=0, row=0)
@@ -210,7 +215,7 @@ sc.grid_columnconfigure(0, weight=1)
 sc_entry = ttk.Entry(sc, textvariable=cel_var, width=5, takefocus=False) #starting cell spinbox
 sc_entry.bind("<FocusOut>", lambda event: save(save_file, 'cell', cel_var.get()))
 sc_entry.grid(column=1, row=0)
-sc_entry.bind('<Control-a>', lambda x: sc_entry.selection_range(0, 'end') or "break")
+sc_entry.bind('<Control-a>', lambda _: sc_entry.selection_range(0, 'end') or "break")
 
 sc_text = ttk.Label(sc, text='Starting Cell') #starting cell label
 sc_text.grid(column=0, row=0)
@@ -224,7 +229,7 @@ lm.grid_columnconfigure(0, weight=1)
 lm_spinbox = ttk.Spinbox(lm, textvariable=lmt_var, from_=0, to=1000, width=3, takefocus=False) #box size spinbox
 lm_spinbox.bind("<FocusOut>", lambda event: save(save_file, 'limit', lmt_var.get()))
 lm_spinbox.grid(column=1, row=0)
-lm_spinbox.bind('<Control-a>', lambda x: lm_spinbox.selection_range(0, 'end') or "break")
+lm_spinbox.bind('<Control-a>', lambda _: lm_spinbox.selection_range(0, 'end') or "break")
 
 lm_text = ttk.Label(lm, text='Limit') #box size label
 lm_text.grid(column=0, row=0)
@@ -238,7 +243,7 @@ cg.grid_columnconfigure(0, weight=1)
 cg_entry = ttk.Entry(cg, textvariable=cfg_var, takefocus=False) #excel file entry input
 cg_entry.grid(column=0, row=0, padx=10, pady=10, sticky='ew')
 cg_entry.bind("<FocusOut>", lambda event: save(save_file, 'config', cfg_var.get()))
-cg_entry.bind('<Control-a>', lambda x: cg_entry.selection_range(0, 'end') or "break")
+cg_entry.bind('<Control-a>', lambda _: cg_entry.selection_range(0, 'end') or "break")
 
 cg_browse = ttk.Button(cg, text='Browse', command=select_yaml_file, takefocus=False) #excel file browse button
 cg_browse.grid(column=1, row=0, padx=10, pady=10)
@@ -252,7 +257,7 @@ op.grid_columnconfigure(0, weight=1)
 op_entry = ttk.Entry(op, textvariable=out_var, takefocus=False) #excel file entry input
 op_entry.grid(column=0, row=0, padx=10, pady=10, sticky='ew')
 op_entry.bind("<FocusOut>", lambda event: save(save_file, 'output', out_var.get()))
-op_entry.bind('<Control-a>', lambda x: op_entry.selection_range(0, 'end') or "break")
+op_entry.bind('<Control-a>', lambda _: op_entry.selection_range(0, 'end') or "break")
 
 op_browse = ttk.Button(op, text='Browse', command=select_output, takefocus=False) #excel file browse button
 op_browse.grid(column=1, row=0, padx=10, pady=10)
