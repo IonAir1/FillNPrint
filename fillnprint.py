@@ -127,13 +127,21 @@ class FillNPrint:
 
 
     #stamp text to image
-    def stamp(self, img, text, pos, dpi, font, size, color, max_width, line_height, max_lines, **kwargs):
+    def stamp(self, img, text, pos, dpi, font, **kwargs):
+        #kwargs
+        size = kwargs.get('size', 12)
+        color = kwargs.get('color', (0,0,0))
+        max_width = kwargs.get('max_width', 50)
+        line_height = kwargs.get('line_height', 1)
+        max_lines = kwargs.get('max_lines', 1)
+        error = kwargs.get('error', '')
+
         draw = ImageDraw.Draw(img)
-        position = (int(self.to_inch(pos.replace(' ','').split(',')[0], error=kwargs.get('error', '')) * dpi + 0.5), int(self.to_inch(pos.replace(' ','').split(',')[1], error=kwargs.get('error', '')) * dpi + 0.5))
+        position = (int(self.to_inch(pos.replace(' ','').split(',')[0], error=error) * dpi + 0.5), int(self.to_inch(pos.replace(' ','').split(',')[1], error=error) * dpi + 0.5))
 
         #verify that the font is existent and is a font file
         if not os.path.isfile(font) or (not font.endswith(".ttf") and not font.endswith(".otf")):
-            self.progress(0, "config error: " + kwargs.get('error', '') + ": nonexistent file or unsupported font \"" + font + "\"")
+            self.progress(0, "config error: " + error + ": nonexistent file or unsupported font \"" + font + "\"")
             exit()
 
         font_final = ImageFont.truetype(font, size)
@@ -296,7 +304,7 @@ class FillNPrint:
                 if pd.isnull(text):
                     text = ''
 
-                self.stamp(img, str(text), curr['position'], document['dpi'], curr['font'], curr['size'], curr['color'], curr['max-width'], curr['line-height'], curr['max-line'], error=item)
+                self.stamp(img, str(text), curr['position'], document['dpi'], curr['font'], size=curr['size'], color=curr['color'], max_width=curr['max-width'], line_height=curr['line-height'], max_lines=curr['max-line'], error=item)
             images.append(img.rotate(document['rotate']*-1, expand=1))
 
         if not os.path.isdir(os.path.dirname(path)):
