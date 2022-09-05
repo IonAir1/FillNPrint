@@ -1,0 +1,5 @@
+jsonschema==4.15.0
+openpyxl==3.0.10
+pandas==1.4.3
+Pillow==9.2.0
+PyYAML==6.0
