@@ -5,6 +5,7 @@ import os
 import re
 import textwrap
 import yaml
+from sys import exit
 from openpyxl import load_workbook
 from PIL import Image, ImageFont, ImageDraw 
 

@@ -1,5 +1,6 @@
 import argparse
 import os
+from sys import exit
 from fillnprint import FillNPrint
 
 parser = argparse.ArgumentParser(prog="fillnprint")
