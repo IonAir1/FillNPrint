@@ -18,7 +18,8 @@ class FillNPrint:
         self.progress_text = None
 
 
-    def parse_yaml(self, file): #parse yaml files
+    #parse yaml files
+    def parse_yaml(self, file):
         if file is None:
             return
         if os.path.exists(file):
@@ -75,7 +76,8 @@ class FillNPrint:
             return cfg
 
 
-    def col2num(self, col): #convert excel column letter to integer
+    #convert excel column letter to integer
+    def col2num(self, col):
         c = 0
         for b in range(len(col)):
             c *= 26
@@ -84,7 +86,8 @@ class FillNPrint:
         return c
 
 
-    def read_excel(self, file, **kwargs): #read excel files as data frame
+    #read excel files as data frame
+    def read_excel(self, file, **kwargs):
         #kwargs
         start = kwargs.get('start', 'A1')
         limit = kwargs.get('limit', None)
