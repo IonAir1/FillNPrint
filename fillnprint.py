@@ -155,8 +155,11 @@ class FillNPrint:
 
         font_final = ImageFont.truetype(font, size)
 
+        #convert floats ending in .0 to integer
+        text_final = re.sub('.0$', '', text, 2)
+
         #wrap text
-        lines = textwrap.wrap(text, width=max_width)
+        lines = textwrap.wrap(text_final, width=max_width)
         lines = lines[:max_lines]
         y_text = position[1]
 
