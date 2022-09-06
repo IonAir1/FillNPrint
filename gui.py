@@ -30,7 +30,7 @@ def read(file):
         save['output'] = cfg.get('main', 'output')
     if cfg.has_option('main','cell'):
         save['cell'] = cfg.get('main', 'cell')
-    if cfg.has_option('main','config'):
+    if cfg.has_option('main','limit'):
         save['limit'] = cfg.get('main', 'limit')
     if cfg.has_option('main', 'sheet'):
         save['sheet'] = cfg.get('main', 'sheet')
