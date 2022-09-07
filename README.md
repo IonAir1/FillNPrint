@@ -97,6 +97,7 @@ text:
      - `background: (<r>,<g>,<b>,<a>)` - this will set the image background to the set rgba color. default is (255,255,255,255).  
      - `rotate: <number>` - rotates the image to the set number. value is in degress but only enter the value itself without the degree sign. default is 0  
      - `reference: <path to image>` - will set background to image. (meant to be used by scanning the form itself and placing it here as a reference as to where the text fields should be placed). if image is bigger than the page, it will automatically resize to fit, else it will be in actual size.
+     - `print-size: <width><unit> x <height><unit> , <x-offset><unit> , <y-offset><unit>` - will paste the forms on an image of a different size. This can be used for printing purposes wherein the page size cannot be configured manually.  
 4. the second sectio is the `text: ` section. Tths will conatain information about what data to place and where to place it. you can put as much "code" as you want with the format `<code name>: `. with \<code name> being any name but prefferably something that will describe the data it uses. i.e  
 
 ```
