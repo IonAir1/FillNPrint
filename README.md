@@ -9,7 +9,7 @@
 
 
 ### How to download  
-[Click here](https://github.com/IonAir1/fillnprint/releases/tag/v1.1.2) to go to downloads page and select the appropriate version.
+[Click here](https://github.com/IonAir1/fillnprint/releases/tag/v1.2.0) to go to downloads page and select the appropriate version.
 For Windows and Linux, executables are available but for MacOS, you will have to use the source code.
 **Note that windows defender may mark the executable as suspicious due to pyinstaller using self extracting exe files. you can either make a folder with an exclusion then directly extract the file there or you may choose to download the source code instead**    
 
