@@ -42,6 +42,7 @@ class FillNPrint:
                             "rotate": {"type": "number"},
                             "background": {"type": "string", "pattern": "^\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$"},
                             "reference": {"type": "string"},
+                            "print-size": {"type": "string", "pattern": "^\d+(?:\.\d+)?[a-zA-Z]+\s*x\s*\d+(?:\.\d+)?[a-zA-Z]+\s*,\s*\d+(?:\.\d+)?[a-zA-Z]+\s*,\s*\d+(?:\.\d+)?[a-zA-Z]+$"}
                         }
                     },
                     "text": {"type": "object"}
@@ -319,10 +320,26 @@ class FillNPrint:
                 self.stamp(img, str(text), curr['position'], document['dpi'], curr['font'], size=curr['size'], color=curr['color'], max_width=curr['max-width'], line_height=curr['line-height'], max_lines=curr['max-line'], error=item)
             images.append(img.rotate(document['rotate']*-1, expand=1))
 
+        #if document has print size variable, paste images to new size
+        if 'print-size' in document:
+            print_new = tuple(document['print-size'].replace(' ','').split(','))
+            print_offset = (int(self.to_inch(print_new[1]) * document['dpi'] + 0.5), int(self.to_inch(print_new[2]) * document['dpi'] + 0.5))
+            print_size = (self.to_inch(print_new[0].split('x')[0]), self.to_inch(print_new[0].split('x')[1]))
+            new_print = Image.new('RGB', (int(print_size[0] * document['dpi'] + 0.5), int(print_size[1] * document['dpi'] + 0.5)), color=(255,255,255,255))
+            new_images = []
+
+            for image in images:
+                new = new_print.copy()
+                new.paste(image, print_offset)
+                new_images.append(new)
+            images = new_images
+        else:
+            new_images = images
+
         if not os.path.isdir(os.path.dirname(path)):
             try:
                 os.makedirs(os.path.dirname(path))
             except Exception:
                 pass
-        images[0].save(path, save_all=True, append_images=images[1:], resolution=document['dpi']) #save
+        new_images[0].save(path, save_all=True, append_images=new_images[1:], resolution=document['dpi']) #save
         self.progress(100, 'Done!')
