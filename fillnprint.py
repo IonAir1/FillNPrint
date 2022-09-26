@@ -157,7 +157,7 @@ class FillNPrint:
         font_final = ImageFont.truetype(font, size)
 
         #convert floats ending in .0 to integer
-        text_final = re.sub('.0$', '', text, 2)
+        text_final = re.sub('\.0$', '', text, count=1)
 
         #wrap text
         lines = textwrap.wrap(text_final, width=max_width)
