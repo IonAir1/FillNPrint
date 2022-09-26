@@ -77,10 +77,12 @@ def select_excel_file():
         title='Open a file',
         initialdir=os.path.expanduser('~'),
         filetypes=filetypes)
-    exl_var = tk.StringVar(root, filename)
-    ef_entry.delete(0,tk.END)
-    ef_entry.insert(0,filename)
-    excel_file('')
+    
+    if filename:
+        exl_var = tk.StringVar(root, filename)
+        ef_entry.delete(0,tk.END)
+        ef_entry.insert(0,filename)
+        excel_file('')
 
 
 #open window for selecting config file
@@ -90,10 +92,12 @@ def select_yaml_file():
         title='Open a file',
         initialdir=os.path.expanduser('~'),
         filetypes=filetypes)
-    cfg_var = tk.StringVar(root, filename)
-    cg_entry.delete(0,tk.END)
-    cg_entry.insert(0,filename)
-    save(save_file, 'config', cfg_var.get())
+
+    if filename:
+        cfg_var = tk.StringVar(root, filename)
+        cg_entry.delete(0,tk.END)
+        cg_entry.insert(0,filename)
+        save(save_file, 'config', cfg_var.get())
 
 
 #open window for selecting output folder
@@ -106,10 +110,12 @@ def select_output():
         title='Save as',
         initialdir=os.path.expanduser('~'),
         filetypes=filetypes)
-    out_var = tk.StringVar(root, filename)
-    op_entry.delete(0,tk.END)
-    op_entry.insert(0,filename)
-    save(save_file, 'output', out_var.get())
+
+    if filename:
+        out_var = tk.StringVar(root, filename)
+        op_entry.delete(0,tk.END)
+        op_entry.insert(0,filename)
+        save(save_file, 'output', out_var.get())
 
 
 #function to run new thread to generate
